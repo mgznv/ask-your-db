@@ -1,0 +1,158 @@
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8" data-dashboard-id="<%= @dashboard.id %>">
+  <div class="px-4 py-6 sm:px-0">
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900"><%= @dashboard.name %></h1>
+        <p class="text-gray-600"><%= pluralize(@dashboard.widget_count, 'widget') %></p>
+      </div>
+      
+      <div class="flex space-x-2">
+        <%= link_to "Editar Dashboard", edit_dashboard_path(@dashboard), 
+            class: "bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" %>
+        <%= link_to "Volver", dashboards_path, 
+            class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" %>
+      </div>
+    </div>
+
+    <!-- Botón flotante para nueva consulta -->
+    <button type="button" 
+            onclick="showNewWidgetForm()"
+            class="fixed bottom-6 right-6 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-lg z-50">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+      </svg>
+    </button>
+
+    <!-- Formulario para nueva consulta (inicialmente oculto) -->
+    <div id="new-widget-form" class="hidden mb-6">
+      <div class="bg-white shadow rounded-lg p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Nueva Consulta en Lenguaje Natural</h2>
+        
+        <%= form_with(model: [@dashboard, @new_widget], 
+                     data: { turbo_frame: "widgets" },
+                     class: "space-y-6",
+                     id: "new-widget-form-element") do |form| %>
+          
+          <!-- Título más simple y rápido -->
+          <div>
+            <%= form.text_field :title, 
+                class: "w-full text-lg font-medium border-0 border-b-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-transparent",
+                placeholder: "💡 Nombre del widget (ej: Ventas por mes)",
+                onkeydown: "handleQuickSave(event, this.form)" %>
+          </div>
+
+          <!-- Consulta principal más prominente -->
+          <div>
+            <%= form.text_area :natural_query, rows: 2,
+                class: "w-full text-base border-2 border-gray-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 p-4",
+                placeholder: "🤔 ¿Qué quieres saber? Escribe tu pregunta en español...",
+                onkeydown: "handleQuickSave(event, this.form)" %>
+            <p class="text-xs text-gray-500 mt-1">💡 Tip: Presiona <kbd class="bg-gray-100 px-1 rounded">Ctrl+Enter</kbd> para guardar rápidamente</p>
+          </div>
+
+          <!-- Botones más grandes y claros -->
+          <div class="flex flex-col sm:flex-row gap-3">
+            <%= form.submit "🚀 Crear Widget", 
+                class: "flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl" %>
+            <button type="button" 
+                    onclick="hideNewWidgetForm()"
+                    class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors duration-200">
+              ❌ Cancelar
+            </button>
+          </div>
+          
+          <!-- Indicador de proceso -->
+          <div class="text-center">
+            <p class="text-sm text-gray-600">
+              📊 El widget se creará → generará SQL → estará listo para aprobar
+            </p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- Widgets Grid -->
+    <div id="widgets" data-turbo-permanent>
+      <% if @dashboard_widgets.any? %>
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <% @dashboard_widgets.each do |widget| %>
+            <%= render "dashboard_widgets/widget_card", widget: widget %>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="text-center py-12">
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No hay widgets</h3>
+          <p class="mt-1 text-sm text-gray-500">
+            Comienza agregando tu primera consulta en lenguaje natural.
+          </p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Funciones globales para manejar el formulario
+  function showNewWidgetForm() {
+    document.getElementById('new-widget-form').classList.remove('hidden');
+    // Focus en el primer input con un pequeño delay
+    setTimeout(() => {
+      const firstInput = document.querySelector('#new-widget-form input[type="text"]');
+      if (firstInput) firstInput.focus();
+    }, 100);
+  }
+  
+  function hideNewWidgetForm() {
+    document.getElementById('new-widget-form').classList.add('hidden');
+    // Limpiar formulario
+    const form = document.getElementById('new-widget-form').querySelector('form');
+    if (form) form.reset();
+  }
+  
+  // Función para guardado rápido con Ctrl+Enter
+  function handleQuickSave(event, form) {
+    // Ctrl+Enter o Cmd+Enter para guardar rápidamente
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+      event.preventDefault();
+      
+      // Verificar que los campos requeridos estén llenos
+      const title = form.querySelector('input[name*="title"]').value.trim();
+      const query = form.querySelector('textarea[name*="natural_query"]').value.trim();
+      
+      if (!title) {
+        alert('💡 Agrega un nombre al widget');
+        form.querySelector('input[name*="title"]').focus();
+        return;
+      }
+      
+      if (!query) {
+        alert('🤔 Escribe tu pregunta en español');
+        form.querySelector('textarea[name*="natural_query"]').focus();
+        return;
+      }
+      
+      // Mostrar feedback visual
+      const submitBtn = form.querySelector('input[type="submit"]');
+      const originalText = submitBtn.value;
+      submitBtn.value = '⏳ Creando...';
+      submitBtn.disabled = true;
+      
+      // Enviar formulario
+      form.submit();
+      
+      // Restaurar botón después de un tiempo
+      setTimeout(() => {
+        submitBtn.value = originalText;
+        submitBtn.disabled = false;
+      }, 3000);
+    }
+  }
+  
+  // Auto-expandir textarea mientras escribes
+  document.addEventListener('input', function(e) {
+    if (e.target.tagName === 'TEXTAREA') {
+      e.target.style.height = 'auto';
+      e.target.style.height = e.target.scrollHeight + 'px';
+    }
+  });
+</script>

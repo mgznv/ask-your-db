@@ -1,0 +1,45 @@
+<%= turbo_stream.append "widgets" do %>
+  <%= render "widget_card", widget: @dashboard_widget %>
+<% end %>
+
+<%= turbo_stream.update "new-widget-form" do %>
+  <div class="bg-green-50 border border-green-200 rounded-md p-4 mb-4">
+    <p class="text-sm text-green-800">
+      Widget creado exitosamente. 
+      <% if @query_result && @query_result[:success] %>
+        SQL generado correctamente.
+      <% elsif @query_error %>
+        Error generando SQL: <%= @query_error %>
+      <% end %>
+    </p>
+  </div>
+  
+  <!-- Reset del formulario -->
+  <%= form_with(model: [@dashboard, @dashboard.dashboard_widgets.build], 
+               data: { turbo_frame: "widgets" },
+               class: "space-y-4") do |form| %>
+    <div>
+      <%= form.label :title, "Título del Widget", class: "block text-sm font-medium text-gray-700" %>
+      <%= form.text_field :title, 
+          class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+          placeholder: "Ej: Ventas por Mes" %>
+    </div>
+
+    <div>
+      <%= form.label :natural_query, "Consulta en Lenguaje Natural", class: "block text-sm font-medium text-gray-700" %>
+      <%= form.text_area :natural_query, rows: 3,
+          class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md",
+          placeholder: "Ej: Muestra las ventas agrupadas por mes del último año" %>
+    </div>
+
+    <div class="flex justify-between">
+      <%= form.submit "Generar SQL", 
+          class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" %>
+      <button type="button" 
+              onclick="hideNewWidgetForm()"
+              class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+        Cancelar
+      </button>
+    </div>
+  <% end %>
+<% end %>

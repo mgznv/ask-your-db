@@ -1,0 +1,13 @@
+<%= turbo_stream.replace "widget_#{@dashboard_widget.id}" do %>
+  <%= render "widget_card", widget: @dashboard_widget %>
+<% end %>
+
+<% if @query_error %>
+<%= turbo_stream.prepend "widget_#{@dashboard_widget.id}" do %>
+  <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-4">
+    <p class="text-sm text-red-800">
+      Error al regenerar SQL: <%= @query_error %>
+    </p>
+  </div>
+<% end %>
+<% end %>

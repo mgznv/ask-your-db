@@ -1,0 +1,8 @@
+<%= turbo_stream.update "widget-results-#{@dashboard_widget.id}" do %>
+  <div class="bg-red-50 border border-red-200 rounded-md p-4">
+    <h4 class="text-sm font-medium text-red-800 mb-2">Error al Ejecutar Consulta</h4>
+    <p class="text-sm text-red-700">
+      Hubo un problema al ejecutar la consulta SQL. Verifica que el SQL sea válido y que las tablas existan.
+    </p>
+  </div>
+<% end %>

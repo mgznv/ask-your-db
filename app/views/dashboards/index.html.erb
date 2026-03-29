@@ -1,0 +1,52 @@
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+  <div class="px-4 py-6 sm:px-0">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-900">Dashboards</h1>
+      <%= link_to "Nuevo Dashboard", new_dashboard_path, 
+          class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" %>
+    </div>
+
+    <% if @dashboards.any? %>
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <% @dashboards.each do |dashboard| %>
+          <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+              <h3 class="text-lg leading-6 font-medium text-gray-900">
+                <%= link_to dashboard.name, dashboard_path(dashboard), 
+                    class: "hover:text-blue-600" %>
+              </h3>
+              <p class="mt-2 text-sm text-gray-500">
+                <%= pluralize(dashboard.widget_count, 'widget') %>
+              </p>
+              
+              <div class="mt-4 flex justify-between">
+                <%= link_to "Ver", dashboard_path(dashboard), 
+                    class: "text-blue-600 hover:text-blue-900 text-sm font-medium" %>
+                <%= link_to "Editar", edit_dashboard_path(dashboard), 
+                    class: "text-gray-600 hover:text-gray-900 text-sm font-medium" %>
+                <%= link_to "Eliminar", dashboard_path(dashboard), 
+                    method: :delete,
+                    data: { 
+                      confirm: "¿Estás seguro de que quieres eliminar este dashboard?",
+                      turbo_method: :delete
+                    },
+                    class: "text-red-600 hover:text-red-900 text-sm font-medium" %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% else %>
+      <div class="text-center py-12">
+        <h3 class="mt-2 text-sm font-medium text-gray-900">No hay dashboards</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          Comienza creando tu primer dashboard con consultas en lenguaje natural.
+        </p>
+        <div class="mt-6">
+          <%= link_to "Crear Dashboard", new_dashboard_path,
+              class: "inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700" %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

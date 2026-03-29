@@ -1,0 +1,35 @@
+<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+  <div class="px-4 py-6 sm:px-0">
+    <div class="mb-6">
+      <h1 class="text-3xl font-bold text-gray-900">Editar Dashboard</h1>
+    </div>
+
+    <%= form_with(model: @dashboard, local: true, class: "space-y-6") do |form| %>
+      <% if @dashboard.errors.any? %>
+        <div class="bg-red-50 border border-red-200 rounded-md p-4">
+          <h3 class="text-sm font-medium text-red-800">
+            Hay <%= pluralize(@dashboard.errors.count, "error") %>:
+          </h3>
+          <ul class="mt-2 text-sm text-red-700">
+            <% @dashboard.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div>
+        <%= form.label :name, "Nombre del Dashboard", class: "block text-sm font-medium text-gray-700" %>
+        <%= form.text_field :name, 
+            class: "mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" %>
+      </div>
+
+      <div class="flex justify-between">
+        <%= form.submit "Actualizar Dashboard", 
+            class: "bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" %>
+        <%= link_to "Cancelar", @dashboard, 
+            class: "bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" %>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -1,0 +1,3 @@
+<%= turbo_stream.replace "widget_#{@dashboard_widget.id}" do %>
+  <%= render "widget_card", widget: @dashboard_widget %>
+<% end %>

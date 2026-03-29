@@ -1,0 +1,173 @@
+<%= turbo_stream.update "widget-results-#{@dashboard_widget.id}" do %>
+  <% if @results.present? %>
+    <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+      <h4 class="text-sm font-medium text-blue-800 mb-2">Resultados de la Consulta</h4>
+      
+      <% if @results.any? %>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <% @results.first.keys.each do |header| %>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <%= header %>
+                  </th>
+                <% end %>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <% @results.each do |row| %>
+                <tr>
+                  <% row.values.each do |value| %>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <%= value %>
+                    </td>
+                  <% end %>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- Chart.js placeholder -->
+        <div class="mt-4">
+          <canvas id="chart-<%= @dashboard_widget.id %>" width="400" height="200"></canvas>
+        </div>
+        
+        <!-- Chart type selector -->
+        <div class="mt-4 flex items-center space-x-4">
+          <label class="text-sm font-medium text-gray-700">Tipo de Gráfico:</label>
+          <select id="chart-type-<%= @dashboard_widget.id %>" 
+                  onchange="updateChart(<%= @dashboard_widget.id %>, this.value)"
+                  class="border-gray-300 rounded-md shadow-sm text-sm">
+            <option value="table" <%= 'selected' if @dashboard_widget.chart_type == 'table' %>>Tabla</option>
+            <option value="line" <%= 'selected' if @dashboard_widget.chart_type == 'line' %>>Línea</option>
+            <option value="bar" <%= 'selected' if @dashboard_widget.chart_type == 'bar' %>>Barras</option>
+            <option value="pie" <%= 'selected' if @dashboard_widget.chart_type == 'pie' %>>Circular</option>
+            <option value="area" <%= 'selected' if @dashboard_widget.chart_type == 'area' %>>Área</option>
+          </select>
+        </div>
+      <% else %>
+        <p class="text-sm text-blue-700">La consulta no retornó resultados.</p>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>
+
+<script>
+  // Función para actualizar gráficos
+  function updateChart(widgetId, chartType) {
+    console.log(`Updating chart ${widgetId} to type ${chartType}`);
+    
+    const canvas = document.getElementById(`chart-${widgetId}`);
+    const table = document.querySelector(`#widget-results-${widgetId} table`);
+    
+    if (!canvas || !table) return;
+    
+    // Guardar selección en base de datos
+    saveChartType(widgetId, chartType);
+    
+    // Mostrar/ocultar según el tipo
+    if (chartType === 'table') {
+      canvas.style.display = 'none';
+      table.style.display = 'table';
+    } else {
+      canvas.style.display = 'block';
+      table.style.display = 'none';
+      
+      // Aquí llamar a window.dashboardManager.updateChart si está disponible
+      if (window.dashboardManager) {
+        window.dashboardManager.updateChart(widgetId, chartType);
+      } else {
+        // Crear un gráfico simple si no está disponible el manager
+        createSimpleChart(canvas, chartType, widgetId);
+      }
+    }
+  }
+  
+  function saveChartType(widgetId, chartType) {
+    fetch(`/dashboards/<%= @dashboard.id %>/dashboard_widgets/${widgetId}/update_chart_type`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({ chart_type: chartType })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        console.log(`Chart type saved: ${data.chart_type}`);
+      } else {
+        console.error('Error saving chart type:', data.error);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  }
+  
+  function createSimpleChart(canvas, chartType, widgetId) {
+    // Extraer datos de la tabla
+    const table = document.querySelector(`#widget-results-${widgetId} table`);
+    if (!table) return;
+    
+    const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+    const rows = Array.from(table.querySelectorAll('tbody tr')).map(tr => 
+      Array.from(tr.querySelectorAll('td')).map(td => td.textContent.trim())
+    );
+    
+    // Preparar datos para Chart.js
+    const labels = rows.map(row => row[0]);
+    const data = rows.map(row => {
+      const value = parseFloat(row[1]);
+      return isNaN(value) ? 0 : value;
+    });
+    
+    // Crear el gráfico
+    const ctx = canvas.getContext('2d');
+    
+    // Limpiar canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Dibujar un gráfico simple
+    if (chartType === 'bar') {
+      drawBarChart(ctx, labels, data, canvas.width, canvas.height);
+    } else {
+      // Para otros tipos, mostrar mensaje
+      ctx.fillStyle = '#374151';
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Gráfico ${chartType} - Requiere Chart.js`, canvas.width/2, canvas.height/2);
+    }
+  }
+  
+  function drawBarChart(ctx, labels, data, width, height) {
+    const padding = 40;
+    const barWidth = (width - padding * 2) / labels.length;
+    const maxValue = Math.max(...data);
+    const scale = (height - padding * 2) / maxValue;
+    
+    // Limpiar
+    ctx.clearRect(0, 0, width, height);
+    
+    // Dibujar barras
+    ctx.fillStyle = '#3B82F6';
+    data.forEach((value, index) => {
+      const barHeight = value * scale;
+      const x = padding + index * barWidth;
+      const y = height - padding - barHeight;
+      
+      ctx.fillRect(x, y, barWidth - 5, barHeight);
+    });
+    
+    // Dibujar etiquetas
+    ctx.fillStyle = '#374151';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    labels.forEach((label, index) => {
+      const x = padding + index * barWidth + barWidth / 2;
+      ctx.fillText(label.substring(0, 10), x, height - 10);
+    });
+  }
+</script>
